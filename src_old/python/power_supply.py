@@ -18,7 +18,7 @@ import troubleshoot
 #----------------------------------------
 
 def ping_LAN():    
-    script_path = './scripts/ping.sh'
+    script_path = '../scripts/ping.sh'
     
     try:
         subprocess.run(['chmod', '+x', script_path], capture_output=True, text=True, check=True)
