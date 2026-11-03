@@ -21,8 +21,7 @@ import pyvisa
 
 # Test parameters
 
-test_voltages = [50, 100, 150, 200, 250, 200, 150, 100, 50]
-#test_voltages = [5, 10, 15, 20, 25, 20, 15, 10, 5]
+test_voltages = [50, 100, 150, 200, 250, 200, 150, 100, 50] # Keeping static for now, will need to be made dynamic.
 
 retest_threshold = 5 # RSD% exceeding this amount (as a percent) requires a re-test
 retest_limit = 3 # the program will not re-test more than this many times
@@ -124,14 +123,13 @@ def run_test(name, s_id, file_type, current_date, start_time):
     while not test_complete:
         
         # Emptying the arrays for the next cycle
-        while len(measured_voltages) > 0:
-            measured_currents.pop()
-            measured_voltages.pop()
-            resistance.pop()
-            resistivity.pop()
+        # Don't necessarily need to be instantiated, but preserving current flow.
+        measured_currents = []
+        measured_voltages = []
+        resistance = []     # Updated - can be removed.
+        resistivity = []    # Updated - can be removed.
         
-        while len(pair_diffs) > 0:
-            pair_diffs.pop()
+        pair_diffs = []
         
         # Clearing stat values for next cycle
         avg_resistivity = 0.0
@@ -178,8 +176,8 @@ def run_test(name, s_id, file_type, current_date, start_time):
     
         
         # Performing calculations
-        calculations.calculate_resistance(measured_voltages, measured_currents, resistance)
-        calculations.calculate_resistivity(resistance, resistivity, cell_geometry_factor)
+        resistance = calculations.calculate_resistance(measured_voltages, measured_currents)
+        resistivity = calculations.calculate_resistivity(resistance, cell_geometry_factor)
         avg_res = calculations.calculate_average_resistance(resistance, avg_res)
         std_dev = calculations.calculate_standard_deviation(resistance, avg_res, std_dev)
         rsd_pct = calculations.calculate_percent_RSD(avg_res, std_dev, rsd_pct)

@@ -7,13 +7,13 @@ MILLIAMP_CONVERSION = 1000   # Used for Ohm's Law: R(Ohms) = 1000 * V(Volts) / I
 # parameters:
 #	- measured_voltages   : array containing the measured voltage value for each applied voltage
 #	- measured_currents   : array containing the measured current value for each applied voltage
-#	- resistance          : array to be filled with calculated resistance values
 #
 # function description:
 #	Calculates 9 resistances (one for each set of voltages/currents in the data arrays) using Ohm's Law. 
 #----------------------------------------
 
-def calculate_resistance(measured_voltages: list[float], measured_currents: list[float], resistance: list[float]) -> list[float]:
+def calculate_resistance(measured_voltages: list[float], measured_currents: list[float]) -> list[float]:
+    resistance = []
     # Looping to perform the calculation for each set of measurements
     # NEW LOOP REQUIRES FAILED TESTS TO DROP BOTH VOLTAGE AND CURRENT FOR THAT TEST.
     for volts, mA in zip(measured_voltages, measured_currents):
@@ -26,7 +26,7 @@ def calculate_resistance(measured_voltages: list[float], measured_currents: list
     # Terminal logging
     print('Calculated resistance values')
 
-    # Returning list. Keeping modify in place behavior for now as well.
+    # Returning list.
     return(resistance)
 
 
@@ -37,14 +37,14 @@ def calculate_resistance(measured_voltages: list[float], measured_currents: list
 # 
 # parameters:
 #	- resistance: array containing the calculated resistance for each applied voltage.
-#	- resistivity: array to be filled with calculated resistivity values.
 #	- geometry_factor: multiply this with the resistance to get resistivity (accounts for cell length and cross-section area)
 #
 # function description:
 #	- Calculates 9 resistivity values (one for each set of voltages/currents)
 #----------------------------------------
 
-def calculate_resistivity(resistance: list[float], resistivity: list[float], geometry_factor: float) -> list[float]:
+def calculate_resistivity(resistance: list[float], geometry_factor: float) -> list[float]:
+    resistivity = []
     # Looping to perform the calculation for each set of measurements
     for r in resistance:
         # Calculating resistivity of the dataset
@@ -56,7 +56,7 @@ def calculate_resistivity(resistance: list[float], resistivity: list[float], geo
     # Terminal logging
     print('Calculated resistivity values')
 
-    # Returning list. Keeping modify in place behavior for now as well.
+    # Returning list.
     return(resistance)
 
 
