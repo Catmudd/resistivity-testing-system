@@ -1,4 +1,6 @@
 
+MILLIAMP_CONVERSION = 1000   # Used for Ohm's Law: R(Ohms) = 1000 * V(Volts) / I(Milliamps)
+
 #----------------------------------------
 # calculate_resistance(measured_voltages, measured_currents, resistance)
 #
@@ -11,17 +13,21 @@
 #	Calculates 9 resistances (one for each set of voltages/currents in the data arrays) using Ohm's Law. 
 #----------------------------------------
 
-def calculate_resistance(measured_voltages, measured_currents, resistance):
+def calculate_resistance(measured_voltages: list[float], measured_currents: list[float], resistance: list[float]) -> list[float]:
     # Looping to perform the calculation for each set of measurements
-    for i in range(len(measured_voltages)):
-        # Calculating resistance for the i dataset
-        r = 1000 * measured_voltages[i] / measured_currents[i]
+    # NEW LOOP REQUIRES FAILED TESTS TO DROP BOTH VOLTAGE AND CURRENT FOR THAT TEST.
+    for volts, mA in zip(measured_voltages, measured_currents):
+        # Calculating resistance for the dataset
+        ohms = MILLIAMP_CONVERSION * volts / mA
         
         # Appending the result to the resistance array
-        resistance.append(r)
+        resistance.append(ohms)
     
     # Terminal logging
     print('Calculated resistance values')
+
+    # Returning list. Keeping modify in place behavior for now as well.
+    return(resistance)
 
 
 
@@ -38,17 +44,20 @@ def calculate_resistance(measured_voltages, measured_currents, resistance):
 #	- Calculates 9 resistivity values (one for each set of voltages/currents)
 #----------------------------------------
 
-def calculate_resistivity(resistance, resistivity, geometry_factor):
+def calculate_resistivity(resistance: list[float], resistivity: list[float], geometry_factor: float) -> list[float]:
     # Looping to perform the calculation for each set of measurements
-    for i in range(len(resistance)):
-        # Calculating resistivity of the i dataset
-        rho = round(resistance[i] * geometry_factor, 3)
+    for r in resistance:
+        # Calculating resistivity of the dataset
+        rho = round(r * geometry_factor, 3)
         
         # Appending the resistivity result to the array
         resistivity.append(rho)
         
     # Terminal logging
     print('Calculated resistivity values')
+
+    # Returning list. Keeping modify in place behavior for now as well.
+    return(resistance)
 
 
 
