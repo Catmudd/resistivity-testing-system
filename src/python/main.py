@@ -82,9 +82,110 @@ except Exception as e:
 results_file_type = 'csv' # default to csv
 usb_drive_specifier = ''
 
+# Check if v is approximately n within some epsilon.
+def is_v_approx_n(v, n, epsilon):
+    return v > n - epsilon and v < n + epsilon
 
+# Ensure power supply finishes at 0 Volt setting.
+def power_supply_safe_finish(bk):
+    power_supply.set_voltage(bk, 0)
+    power_supply.channel_off(bk)
+    time.sleep(1.5)
 
+# Take test sample.
+# measured_currents and measured_voltages inside this function are LOCALLY SCOPED,
+# and do not refer to the globally-scoped measured_currents and measured_voltages.
+# TODO: Eliminate globally-scoped variants.
+# Returns true iff last VOLT_WAIT_PASS_NUM tests succeeded.
+def take_sample(bk, ser, test_voltage, measured_currents: list, measured_voltages: list) -> bool:
 
+    # ================================================================
+    # PART 0: Old Code for Reference
+    # ================================================================
+
+    # # Troubleshoot code
+    # print('\n')
+    # print('Power supply error code: ')
+    # print(bk.query("SYST:ERR?"))
+    # print('\n')
+    
+    # # Setting and applying voltage
+    # power_supply.set_voltage(bk, test_voltage)
+    # power_supply.channel_on(bk)
+    # time.sleep(1.5)
+    
+    # # Current measurement
+    # power_supply.measure_current(bk, measured_currents)
+    
+    # # Voltage measurement
+    # voltage_measurement.trigger_arduino(ser)
+    # voltage_in = voltage_measurement.read_from_UART(ser)
+    # voltage_measurement.apply_calibration_factor(voltage_in, measured_voltages)
+    
+    # # Get ready for next cycle
+    # power_supply.channel_off(bk)
+    # time.sleep(1)
+
+    VOLT_WAIT_PASS_NUM: float = 4
+    VOLT_WAIT_SEC: float = 0.1
+    VOLT_WAIT_MAX_SAMPLES: float = 20
+    VOLT_WAIT_DEVIANCE: float = 1
+    VOLT_WAIT_ERROR: float = 20
+
+    read_voltages = []
+
+    # ================================================================
+    # PART 1: Wait for voltage read by Arduino to stablize
+    # If it never does, or an error occurs, raise it and 
+    # reset power supply.
+    # ================================================================
+
+    power_supply.set_voltage(bk, test_voltage)
+    power_supply.channel_on(bk)
+
+    volt_error: bool = False # True iff any voltage not equal test_voltage, + or - VOLT_WAIT_ERROR.
+    volt_pass: bool = False # True iff last VOLT_WAIT_PASS_NUM voltages equal test_voltage, + or - VOLT_WAIT_DEVIANCE.
+
+    for i in range(VOLT_WAIT_MAX_SAMPLES):
+
+        time.sleep(VOLT_WAIT_SEC)
+
+        # Read voltage and stick it into buffer head.
+        voltage_measurement.trigger_arduino(ser)
+        raw_voltage: float = voltage_measurement.read_from_UART(ser)
+        processed_voltage = voltage_measurement.process_voltage(raw_voltage)
+        read_voltages.insert(0, processed_voltage)
+
+        # Catch unnacceptable voltages.
+        if (not is_v_approx_n(read_voltages[0], test_voltage, VOLT_WAIT_ERROR)):
+            volt_error = True
+            break
+
+        # Wait until has at least taken VOLT_WAIT_PASS_NUM samples
+        # to actually check samples and see if they're all within bounds.
+        if (i < VOLT_WAIT_PASS_NUM):
+            continue
+
+        # If most recent VOLT_WAIT_PASS_NUM sampkes fall within max deviance, 
+        # great! We can break. Otherwise, keep re-checking until timeout.
+        if all(is_v_approx_n(voltage, test_voltage, VOLT_WAIT_DEVIANCE) for voltage in read_voltages[0:VOLT_WAIT_PASS_NUM]):
+            volt_pass = True
+            break
+    
+    # ================================================================
+    # PART 2: Append data to lists.
+    # ================================================================
+
+    if (volt_error):
+        power_supply.channel_off(bk)
+        raise Exception(f'Voltage exceeded safety bounds ({read_voltages[0]}).')
+
+    power_supply.measure_current(bk, measured_currents)
+    power_supply.channel_off(bk)
+    time.sleep(VOLT_WAIT_SEC)
+
+    measured_voltages.append(read_voltages[0])
+    return volt_pass
 
 #----------------------------------------
 # Test Sequence
@@ -139,41 +240,18 @@ def run_test(name, s_id, file_type, current_date, start_time):
         rsd_pct = 0.0
     
         
-        # Looping through the set of applied voltages
-        for i in range(len(test_voltages)):
+        # Looping through the set of applied voltages.
+        # Try taking a sample, but if something excepts,
+        # safely shut off hardware and re-emit the error.
+        for test_voltage in test_voltages:
             
-            
-            
-            #### Troubleshoot code
-            
-            print('\n')
-            print('Power supply error code: ')
-            print(bk.query("SYST:ERR?"))
-            print('\n')
-            
-            
-            #####
-            
-            
-            
-            
-            
-            # Setting and applying voltage
-            power_supply.set_voltage(bk, test_voltages[i])
-            power_supply.channel_on(bk)
-            time.sleep(1.5)
-            
-            # Current measurement
-            power_supply.measure_current(bk, measured_currents)
-            
-            # Voltage measurement
-            voltage_measurement.trigger_arduino(ser)
-            voltage_in = voltage_measurement.read_from_UART(ser)
-            voltage_measurement.apply_calibration_factor(voltage_in, measured_voltages)
-            
-            # Get ready for next cycle
-            power_supply.channel_off(bk)
-            time.sleep(1)
+            try: 
+                if not take_sample(bk, ser, test_voltage, measured_currents, measured_voltages):
+                    print(f"Voltage {test_voltage} failed. Continuing...")
+            except:
+                voltage_measurement.close_UART_channel(ser)
+                power_supply_safe_finish(bk)
+                raise
     
         
         # Performing calculations
@@ -230,16 +308,9 @@ def run_test(name, s_id, file_type, current_date, start_time):
     # -- Copying to USB drive
     report_generation.copy_to_USB(directory, usb_drive_specifier)
         
-    
-    
     # Shutdown tasks
     voltage_measurement.close_UART_channel(ser)
-    
-    # -- ensure power supply finishes at 0 Volt setting
-    power_supply.set_voltage(bk, 0)
-    power_supply.channel_off(bk)
-    time.sleep(1.5)
-    
+    power_supply_safe_finish(bk)
     
     # Terminal logging
     print('--------------------')

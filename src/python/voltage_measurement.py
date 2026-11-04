@@ -81,40 +81,18 @@ def read_from_UART(ser):
 
 def apply_calibration_factor(raw_value, measured_voltages):
 
-#     OLD CODE (SINGLE-FIT CALIBRATION)
-#     calibrated = abs((0.4736*raw_value) - 0.2929)
-#     measured_voltages.append(calibrated)
-# 
-#     # Terminal logging
-#     print('Applied calibration: ', raw_value, ' --> ', calibrated)
-
-
-#     # UPDATED - Multi-Fit Calibration
-#     if raw_value > 11.4168 and raw_value < 63.6364:     # low-voltage (5-25V) case
-#         calibrated = abs(0.4778*raw_value - 0.3423)
-#     else:
-#         calibrated = abs(0.4736*raw_value - 0.2929)     # remaining cases (sub 5V or above 25V)
-#     
-#     measured_voltages.append(calibrated)
-#     
-#     print('Applied calibration: ', raw_value, ' --> ', calibrated)
-
-
-
-# Updated - Using 05/08/2026 calibration data
-    if raw_value < 34.9497:
-        calibrated = abs(0.4666*raw_value - 1.0444)
-    elif raw_value > 211.6943:
-        calibrated = abs(1.0097*raw_value - 115.93)
-    else:
-        calibrated = abs(0.456*raw_value - 1.3223)
-    
+    calibrated = process_voltage(raw_value)    
     measured_voltages.append(calibrated)
-    
     print('Applied calibration: ', raw_value, ' --> ', calibrated)
 
 
-
+def process_voltage(raw_value):
+    if raw_value < 34.9497:
+        return abs(0.4666*raw_value - 1.0444)
+    elif raw_value > 211.6943:
+        return abs(1.0097*raw_value - 115.93)
+    else:
+        return abs(0.456*raw_value - 1.3223)
 
 
 
