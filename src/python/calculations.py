@@ -12,16 +12,18 @@ MILLIAMP_CONVERSION = 1000   # Used for Ohm's Law: R(Ohms) = 1000 * V(Volts) / I
 #	Calculates 9 resistances (one for each set of voltages/currents in the data arrays) using Ohm's Law. 
 #----------------------------------------
 
-def calculate_resistance(measured_voltages: list[float], measured_currents: list[float]) -> list[float]:
-    resistance = []
+def calculate_resistance(test_voltages: list[int], measured_voltages: dict[int:list[float]], measured_currents: dict[int:list[float]]) -> dict[int:list[float]]:
+    resistance = dict()
     # Looping to perform the calculation for each set of measurements
-    # NEW LOOP REQUIRES FAILED TESTS TO DROP BOTH VOLTAGE AND CURRENT FOR THAT TEST.
-    for volts, mA in zip(measured_voltages, measured_currents):
-        # Calculating resistance for the dataset
-        ohms = MILLIAMP_CONVERSION * volts / mA
-        
-        # Appending the result to the resistance array
-        resistance.append(ohms)
+    for test_voltage in test_voltages:
+        resistance[test_voltage] = []
+
+        for volts, mA in zip(measured_voltages[test_voltage], measured_currents[test_voltage]):        
+            # Calculating resistance for the dataset
+            ohms = MILLIAMP_CONVERSION * volts / mA
+            
+            # Appending the result to the resistance array
+            resistance[test_voltage].append(ohms)
     
     # Terminal logging
     print('Calculated resistance values')

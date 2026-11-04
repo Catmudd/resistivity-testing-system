@@ -21,8 +21,7 @@ import pyvisa
 
 # Test parameters
 
-test_voltages = [50, 100, 150, 200, 250, 200, 150, 100, 50] # Keeping static for now, will need to be made dynamic.
-# test_voltages = [50, 100, 150, 200, 250] # Still static, now singular. Line is disabled pending EE confirmation of ordering.
+test_voltages = [50, 100, 150, 200, 250] # Keeping static for now, will need to be made dynamic.
 
 retest_threshold = 5 # RSD% exceeding this amount (as a percent) requires a re-test
 retest_limit = 3 # the program will not re-test more than this many times
@@ -97,7 +96,7 @@ def power_supply_safe_finish(bk):
 # and do not refer to the globally-scoped measured_currents and measured_voltages.
 # TODO: Eliminate globally-scoped variants.
 # Returns true iff last VOLT_WAIT_PASS_NUM tests succeeded.
-def take_sample(bk, ser, test_voltage, measured_currents: list, measured_voltages: list) -> bool:
+def take_sample(bk, ser, test_voltage, measured_currents: dict[int:list[float]], measured_voltages: dict[int:list[float]]) -> bool:
 
     # ================================================================
     # PART 0: Old Code for Reference
@@ -180,11 +179,11 @@ def take_sample(bk, ser, test_voltage, measured_currents: list, measured_voltage
         power_supply.channel_off(bk)
         raise Exception(f'Voltage exceeded safety bounds ({read_voltages[0]}).')
 
-    power_supply.measure_current(bk, measured_currents)
+    power_supply.measure_current(bk, test_voltage, measured_currents)
     power_supply.channel_off(bk)
     time.sleep(VOLT_WAIT_SEC)
 
-    measured_voltages.append(read_voltages[0])
+    measured_voltages[test_voltage].append(read_voltages[0])
     return volt_pass
 
 #----------------------------------------
@@ -226,9 +225,9 @@ def run_test(name, s_id, file_type, current_date, start_time):
         
         # Emptying the arrays for the next cycle
         # Don't necessarily need to be instantiated, but preserving current flow.
-        measured_currents = []
-        measured_voltages = []
-        resistance = []     # Updated - can be removed.
+        # measured_currents = []
+        # measured_voltages = []
+        # resistance = []     # Updated - can be removed.
         resistivity = []    # Updated - can be removed.
         
         pair_diffs = []
@@ -244,6 +243,11 @@ def run_test(name, s_id, file_type, current_date, start_time):
         # Try taking a sample, but if something excepts,
         # safely shut off hardware and re-emit the error.
         for test_voltage in test_voltages:
+
+            measured_voltages = dict()
+            measured_voltages[test_voltage] = []
+            measured_currents = dict()
+            measured_currents[test_voltage] = []
             
             try: 
                 if not take_sample(bk, ser, test_voltage, measured_currents, measured_voltages):
@@ -255,7 +259,7 @@ def run_test(name, s_id, file_type, current_date, start_time):
     
         
         # Performing calculations
-        resistance = calculations.calculate_resistance(measured_voltages, measured_currents)
+        resistance = calculations.calculate_resistance(test_voltages, measured_voltages, measured_currents)
         resistivity = calculations.calculate_resistivity(resistance, cell_geometry_factor)
         avg_res = calculations.calculate_average_resistance(resistance, avg_res)
         std_dev = calculations.calculate_standard_deviation(resistance, avg_res, std_dev)
