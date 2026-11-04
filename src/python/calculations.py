@@ -182,10 +182,7 @@ def calculate_rel_diff_percents(resistance, pair_diffs):
         #calculate the percent difference between the min and max values of this list
         vmin = min(pair_values)
         vmax = max(pair_values)
-        if vmin==0:
-            rel_diff_pct = 0.0 #avoid dividing by 0
-        else:
-            rel_diff_pct = 100*(vmax - vmin)/vmin
+        rel_diff_pct = 0.0 if vmin == 0 else 100 * (vmax - vmin) / vmin
         
         pair_diffs.append(round(rel_diff_pct, 2))
 

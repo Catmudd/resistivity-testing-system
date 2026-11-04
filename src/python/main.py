@@ -22,6 +22,7 @@ import pyvisa
 # Test parameters
 
 test_voltages = [50, 100, 150, 200, 250, 200, 150, 100, 50] # Keeping static for now, will need to be made dynamic.
+# test_voltages = [50, 100, 150, 200, 250] # Still static, now singular. Line is disabled pending EE confirmation of ordering.
 
 retest_threshold = 5 # RSD% exceeding this amount (as a percent) requires a re-test
 retest_limit = 3 # the program will not re-test more than this many times
