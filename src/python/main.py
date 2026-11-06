@@ -190,7 +190,7 @@ def take_sample(bk, ser, test_voltage, measured_currents: dict[int:list[float]],
 # Test Sequence
 #----------------------------------------
 
-def run_test(name, s_id, file_type, current_date, start_time):    
+def run_test(name: str, s_id: str, file_type: str, current_date: str, start_time: str) -> int:    
     #Storing user-inputted values as variables in the scope of 'main.py'
     tester_name = name
     sample_id = s_id
@@ -220,33 +220,17 @@ def run_test(name, s_id, file_type, current_date, start_time):
     cycles_completed = 1
     test_complete = False # setting test_complete to False initially
 
+    measured_voltages = dict()
+    measured_currents = dict()
     
     while not test_complete:
-        
-        # Emptying the arrays for the next cycle
-        # Don't necessarily need to be instantiated, but preserving current flow.
-        # measured_currents = []
-        # measured_voltages = []
-        # resistance = []     # Updated - can be removed.
-        resistivity = []    # Updated - can be removed.
-        
-        pair_diffs = []
-        
-        # Clearing stat values for next cycle
-        avg_resistivity = 0.0
-        avg_res = 0.0
-        std_dev = 0.0
-        rsd_pct = 0.0
-    
         
         # Looping through the set of applied voltages.
         # Try taking a sample, but if something excepts,
         # safely shut off hardware and re-emit the error.
         for test_voltage in test_voltages:
 
-            measured_voltages = dict()
             measured_voltages[test_voltage] = []
-            measured_currents = dict()
             measured_currents[test_voltage] = []
             
             try: 
@@ -256,15 +240,19 @@ def run_test(name, s_id, file_type, current_date, start_time):
                 voltage_measurement.close_UART_channel(ser)
                 power_supply_safe_finish(bk)
                 raise
-    
+
+        # Abandon testing if no measurements taken.
+        if (not measured_currents) or (not measured_voltages):
+            print("ERROR: Missing voltage/current measurements. Aborting tests...")
+            return -1
         
         # Performing calculations
         resistance = calculations.calculate_resistance(test_voltages, measured_voltages, measured_currents)
         resistivity = calculations.calculate_resistivity(test_voltages, resistance, CELL_GEOMETRY_FACTOR)
-        avg_res = calculations.calculate_average_resistance(resistance, avg_res)
-        std_dev = calculations.calculate_standard_deviation(resistance, avg_res, std_dev)
-        rsd_pct = calculations.calculate_percent_RSD(avg_res, std_dev, rsd_pct)
-        calculations.calculate_rel_diff_percents(resistance, pair_diffs)
+        avg_res = calculations.calculate_average_resistance(resistance)
+        std_dev = calculations.calculate_standard_deviation(resistance, avg_res)
+        rsd_pct = calculations.calculate_percent_RSD(avg_res, std_dev)
+        rel_diffs = calculations.calculate_rel_diff_percents(resistance)
         
         
         # Building report table (CSV 1)
@@ -274,7 +262,7 @@ def run_test(name, s_id, file_type, current_date, start_time):
         
         # -- append the current-cycle table to the full-test (accumulative) table
         FULL_TABLE = report_generation.append_active_to_full_table(ACTIVE_TABLE, FULL_TABLE)
-        9.5054656	
+        9.5054656	# *EXTRA* magic number
         # Terminal logging for monitoring
         for row in FULL_TABLE:
             print(*row, sep='\t\t')

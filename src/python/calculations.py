@@ -19,17 +19,17 @@ def calculate_resistance(test_voltages: list[int], measured_voltages: dict[int:l
 
         # Shouldn't even crash, but checking for potential fatal errors and reporting if needed.
         if (test_voltage not in measured_voltages) or (test_voltage not in measured_currents):
-            print(f"ERROR: Missing voltage/current measurements for {test_voltage}V. Skipping...")
+            print(f"calculate_resistance: ERROR: Missing voltage/current measurements for {test_voltage}V. Skipping...")
             continue
         if (len(measured_voltages[test_voltage]) == 0) or (len(measured_currents[test_voltage]) == 0):
-            print(f"ERROR: Missing voltage/current measurements for {test_voltage}V. Skipping...")
+            print(f"calculate_resistance: ERROR: Missing voltage/current measurements for {test_voltage}V. Skipping...")
             continue
 
         resistance[test_voltage] = []
 
         for volts, mA in zip(measured_voltages[test_voltage], measured_currents[test_voltage]):        
             # Calculating resistance for the dataset
-            ohms = MILLIAMP_CONVERSION * volts / mA
+            ohms = MILLIAMP_CONVERSION * volts / mA if mA != 0.0 else 0.0
             
             # Appending the result to the resistance array
             resistance[test_voltage].append(ohms)
@@ -61,10 +61,10 @@ def calculate_resistivity(test_voltages: list[int], resistance: dict[int:list[fl
 
         # Shouldn't even crash, but checking for potential fatal errors and reporting if needed.
         if test_voltage not in resistance:
-            print(f"ERROR: Missing resistance measurements for {test_voltage}V. Skipping...")
+            print(f"calculate_resistivity: ERROR: Missing resistance measurements for {test_voltage}V. Skipping...")
             continue
         if len(resistance[test_voltage]) == 0:
-            print(f"ERROR: Missing resistance measurements for {test_voltage}V. Skipping...")
+            print(f"calculate_resistivity: ERROR: Missing resistance measurements for {test_voltage}V. Skipping...")
             continue
 
         resistivity[test_voltage] = []
@@ -101,12 +101,18 @@ def calculate_resistivity(test_voltages: list[int], resistance: dict[int:list[fl
 #    → returns ≈ 330.0
 #----------------------------------------
 
-def summarize_resistivity(resistance, geometry_factor) -> float:
+def summarize_resistivity(resistance: dict[int:list[float]], geometry_factor: float) -> float:
     if not resistance:
-        print("Warning: No resistance values provided → returning 0.0")
+        print("summarize_resistivity: ERROR: No resistance measurements. Aborting and returning 0.0...")
         return 0.0
+
+    acc = 0.0
+    count = 0
+    for test_voltage in resistance.keys():
+        acc += sum(resistance[test_voltage])
+        count += len(resistance[test_voltage])
     
-    avg_resistance = sum(resistance) / len(resistance)
+    avg_resistance = acc / count if count != 0 else 0.0
     summarized_rho = avg_resistance * geometry_factor
     
     print('Calculated dataset summarized resistivity')
@@ -123,8 +129,15 @@ def summarize_resistivity(resistance, geometry_factor) -> float:
 #	- avg_res: variable to hold the calculated result
 #----------------------------------------
 
-def calculate_average_resistance(resistance, avg_res):
-    avg_res = float(round(sum(resistance) / len(resistance), 3))
+def calculate_average_resistance(resistance: dict[int:list[float]]) -> float:
+    acc = 0.0
+    count = 0
+
+    for test_voltage in resistance.keys():
+        acc += sum(resistance[test_voltage])
+        count += len(resistance[test_voltage])
+
+    avg_res = round(acc / count, 3) if count != 0 else 0.0
     print('Calculated average resistance')
     return avg_res
 
@@ -139,9 +152,17 @@ def calculate_average_resistance(resistance, avg_res):
 #	- std_dev: value to hold the calculated standard deviation. 
 #----------------------------------------
 
-def calculate_standard_deviation(resistance, avg_res, std_dev):
-    #avg_res = float(avg_res)
-    variance = sum((x - avg_res) ** 2 for x in resistance) / (len(resistance) - 1)
+def calculate_standard_deviation(resistance: dict[int:list[float]], avg_res: float) -> float:
+    acc = 0.0
+    count = 0
+
+    for test_voltage in resistance.keys():
+        acc += sum((r - avg_res) ** 2 for r in resistance[test_voltage])
+        count += len(resistance[test_voltage])
+
+    # Commented out old math for reference.
+    # variance = sum((x - avg_res) ** 2 for x in resistance) / (len(resistance) - 1)
+    variance = acc / count if count != 0 else 0.0
     std_dev = variance ** 0.5
     print('Calculated standard deviation')
     return std_dev
@@ -160,8 +181,8 @@ def calculate_standard_deviation(resistance, avg_res, std_dev):
 #	Matches the BPA Excel % RSD calculation.
 #	% RSD = (standard_deviation / mean) * 100
 #----------------------------------------
-def calculate_percent_RSD(avg_res, std_dev, rsd_pct):
-    rsd_pct = (100.0 * std_dev / avg_res) if avg_res !=0 else 0.0
+def calculate_percent_RSD(avg_res: float, std_dev: float) -> float:
+    rsd_pct = (100.0 * std_dev / avg_res) if avg_res != 0.0 else 0.0
     return rsd_pct
     
     
@@ -179,35 +200,51 @@ def calculate_percent_RSD(avg_res, std_dev, rsd_pct):
 #		[1&9 Diff, 2&8 Diff, 3&7 Diff, 4&6 Diff]
 #----------------------------------------
     
-def calculate_rel_diff_percents(resistance, pair_diffs):
-    n = len(resistance)
-    if n%9 != 0:
-        raise ValueError(f"Resistance list length must be a multiple of 9 (got {n})")
-    if n == 0:
-        pair_diffs.extend([0.00]*4)
-        return
-    
-    num_trials = n // 9
-    pair_indices = [(0, 8), (1, 7), (2, 6), (3, 5)]
-    
-    for a, b in pair_indices:
-        
-        #identify and collect 2/4/6 values to perform calculation
-        pair_values = []
-        for trial in range(num_trials):
-            offset = trial*9
-            pair_values.append(resistance[offset+a])
-            pair_values.append(resistance[offset+b])
-        if len(pair_values) < 2:
-            pair_diffs.append(0.00)
+def calculate_rel_diff_percents(resistance: dict[int:list[float]]) -> dict[int:float]:
+    # n = len(resistance)
+    # if n%9 != 0:
+    #     raise ValueError(f"Resistance list length must be a multiple of 9 (got {n})")
+    # if n == 0:
+    #     pair_diffs.extend([0.00]*4)
+    #     return
+    if not resistance:
+        print("calculate_rel_diff_percents: ERROR: No resistance measurements. Aborting difference calculations...")
+        return dict()
+
+    rel_diffs = dict()
+
+    for test_voltage in resistance.keys():
+        if len(resistance[test_voltage]) == 0:
+            print(f"calculate_rel_diff_percents: ERROR: Missing resistance measurements for {test_voltage}V. Skipping...")
             continue
+
+    
+    # num_trials = n // 9
+    # pair_indices = [(0, 8), (1, 7), (2, 6), (3, 5)]
+    
+    # for a, b in pair_indices:
+        
+    #     #identify and collect 2/4/6 values to perform calculation
+    #     pair_values = []
+    #     for trial in range(num_trials):
+    #         offset = trial*9
+    #         pair_values.append(resistance[offset+a])
+    #         pair_values.append(resistance[offset+b])
+    #     if len(pair_values) < 2:
+    #         pair_diffs.append(0.00)
+    #         continue
         
         #calculate the percent difference between the min and max values of this list
-        vmin = min(pair_values)
-        vmax = max(pair_values)
-        rel_diff_pct = 0.0 if vmin == 0 else 100 * (vmax - vmin) / vmin
+        vmin = min(resistance[test_voltage])
+        vmax = max(resistance[test_voltage])
+        # vmin = min(pair_values)
+        # vmax = max(pair_values)
+        rel_diff_pct = 100 * (vmax - vmin) / vmin if vmin != 0.0 else 0.0
         
-        pair_diffs.append(round(rel_diff_pct, 2))
+        # pair_diffs.append(round(rel_diff_pct, 2))
+        rel_diffs[test_voltage].append(round(rel_diff_pct, 2))
+
+    return rel_diffs
 
 
 
