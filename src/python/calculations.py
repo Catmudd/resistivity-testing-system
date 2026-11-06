@@ -19,10 +19,10 @@ def calculate_resistance(test_voltages: list[int], measured_voltages: dict[int:l
 
         # Shouldn't even crash, but checking for potential fatal errors and reporting if needed.
         if (test_voltage not in measured_voltages) or (test_voltage not in measured_currents):
-            print(f"calculate_resistance: ERROR: Missing voltage/current measurements for {test_voltage}V. Skipping...")
+            print(f"calculate_resistance: ERROR: Missing voltage/current data for {test_voltage}V. Skipping...")
             continue
         if (len(measured_voltages[test_voltage]) == 0) or (len(measured_currents[test_voltage]) == 0):
-            print(f"calculate_resistance: ERROR: Missing voltage/current measurements for {test_voltage}V. Skipping...")
+            print(f"calculate_resistance: ERROR: Missing voltage/current data for {test_voltage}V. Skipping...")
             continue
 
         resistance[test_voltage] = []
@@ -61,10 +61,10 @@ def calculate_resistivity(test_voltages: list[int], resistance: dict[int:list[fl
 
         # Shouldn't even crash, but checking for potential fatal errors and reporting if needed.
         if test_voltage not in resistance:
-            print(f"calculate_resistivity: ERROR: Missing resistance measurements for {test_voltage}V. Skipping...")
+            print(f"calculate_resistivity: ERROR: Missing resistance data for {test_voltage}V. Skipping...")
             continue
         if len(resistance[test_voltage]) == 0:
-            print(f"calculate_resistivity: ERROR: Missing resistance measurements for {test_voltage}V. Skipping...")
+            print(f"calculate_resistivity: ERROR: Missing resistance data for {test_voltage}V. Skipping...")
             continue
 
         resistivity[test_voltage] = []
@@ -103,7 +103,7 @@ def calculate_resistivity(test_voltages: list[int], resistance: dict[int:list[fl
 
 def summarize_resistivity(resistance: dict[int:list[float]], geometry_factor: float) -> float:
     if not resistance:
-        print("summarize_resistivity: ERROR: No resistance measurements. Aborting and returning 0.0...")
+        print("summarize_resistivity: ERROR: No resistance data. Aborting and returning 0.0...")
         return 0.0
 
     acc = 0.0
@@ -208,14 +208,14 @@ def calculate_rel_diff_percents(resistance: dict[int:list[float]]) -> dict[int:f
     #     pair_diffs.extend([0.00]*4)
     #     return
     if not resistance:
-        print("calculate_rel_diff_percents: ERROR: No resistance measurements. Aborting difference calculations...")
+        print("calculate_rel_diff_percents: ERROR: No resistance data. Aborting difference calculations...")
         return dict()
 
     rel_diffs = dict()
 
     for test_voltage in resistance.keys():
         if len(resistance[test_voltage]) == 0:
-            print(f"calculate_rel_diff_percents: ERROR: Missing resistance measurements for {test_voltage}V. Skipping...")
+            print(f"calculate_rel_diff_percents: ERROR: Missing resistance data for {test_voltage}V. Skipping...")
             continue
 
     

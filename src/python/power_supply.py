@@ -164,6 +164,8 @@ def measure_current(power_supply, test_voltage: int, measured_currents: dict[int
     current = float(current)*1000
     
     # Appending result to the 'measured_currents' array
+    if test_voltage not in measured_currents:
+        measured_currents[test_voltage] = []
     measured_currents[test_voltage].append(current)
     
     # Terminal logging

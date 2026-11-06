@@ -21,25 +21,28 @@ import pyvisa
 
 # Test parameters
 
-test_voltages = [50, 100, 150, 200, 250] # Keeping static for now, will need to be made dynamic.
+test_voltage_levels = [50, 100, 150, 200, 250] # Keeping static for now, will need to be made dynamic.
 
-retest_threshold = 5 # RSD% exceeding this amount (as a percent) requires a re-test
-retest_limit = 3 # the program will not re-test more than this many times
+RETEST_THRESHOLD = 5 # RSD% exceeding this amount (as a percent) requires a re-test
+RETEST_LIMIT = 3 # the program will not re-test more than this many times
 
-# Values to be measured
-measured_voltages = []
-measured_currents = []
+#----------------------------------------
+# # Values to be measured (changed from declarations to checklist)
+#----------------------------------------
+#   voltages
+#   currents
 
-# Values to be calculated
-resistance = []
-resistivity = [] #redundant array, BPA worksheet only need a single summarized value
-avg_resistivity = 0.0
-avg_res = 0.0
-std_dev = 0.0
-rsd_pct = 0.0 # re-run if > 4%
-pair_diffs = []
-trial_id = []
-fail_id = []
+#----------------------------------------
+# # Values to be calculated (changed from declarations to checklist)
+#----------------------------------------
+#   resistances
+#   resistivities (redundant array, BPA worksheet only need a single summarized value)
+#   average resistivity
+#   average resistance
+#   standard deviation
+#   RSD percent (defined as: 100 * (standard deviation / average)
+#       re-run if RSD > 4%
+#   relative min/max resistances
 
 
 # Test cell geometry factor
@@ -183,6 +186,8 @@ def take_sample(bk: pyvisa.Resource, ser: serial.Serial, test_voltage: int, meas
     power_supply.channel_off(bk)
     time.sleep(VOLT_WAIT_SEC)
 
+    if test_voltage not in measured_voltages:
+        measured_voltages[test_voltage] = []
     measured_voltages[test_voltage].append(read_voltages[0])
     return volt_pass
 
@@ -214,14 +219,17 @@ def run_test(name: str, s_id: str, file_type: str, current_date: str, start_time
     
     # Result Table (currently just a header row --- to be filled with data)
     full_table = [
-        ["V Applied", "V Measured", "Current (mA)", "Resistance", "Trial_ID", "Pass_ID"],  # Row 0: headers
+        ["V Applied", "V Measured", "Currents (mA)", "Resistances (ohms)", "Trial_ID", "Pass_ID"],  # Row 0: headers
      ]
     
-    cycles_completed = 1
+    cycles_completed = 0
     test_complete = False # setting test_complete to False initially
 
     measured_voltages = dict()
     measured_currents = dict()
+
+    # Ascending and then descending behavior - should work regardless of which values are present.
+    test_voltages = sorted(test_voltage_levels) + sorted(test_voltage_levels, reverse=True)
     
     while not test_complete:
         
@@ -230,8 +238,10 @@ def run_test(name: str, s_id: str, file_type: str, current_date: str, start_time
         # safely shut off hardware and re-emit the error.
         for test_voltage in test_voltages:
 
-            measured_voltages[test_voltage] = []
-            measured_currents[test_voltage] = []
+            if test_voltage not in measured_voltages:
+                measured_voltages[test_voltage] = []
+            if test_voltage not in measured_currents:
+                measured_currents[test_voltage] = []
             
             try: 
                 if not take_sample(bk, ser, test_voltage, measured_currents, measured_voltages):
@@ -247,18 +257,18 @@ def run_test(name: str, s_id: str, file_type: str, current_date: str, start_time
             return -1
         
         # Performing calculations
-        resistance = calculations.calculate_resistance(test_voltages, measured_voltages, measured_currents)
-        resistivity = calculations.calculate_resistivity(test_voltages, resistance, CELL_GEOMETRY_FACTOR)
-        avg_res = calculations.calculate_average_resistance(resistance)
-        std_dev = calculations.calculate_standard_deviation(resistance, avg_res)
+        resistances = calculations.calculate_resistance(test_voltages, measured_voltages, measured_currents)
+        resistivities = calculations.calculate_resistivity(test_voltages, resistances, CELL_GEOMETRY_FACTOR)
+        avg_res = calculations.calculate_average_resistance(resistances)
+        std_dev = calculations.calculate_standard_deviation(resistances, avg_res)
         rsd_pct = calculations.calculate_percent_RSD(avg_res, std_dev)
-        rel_diffs = calculations.calculate_rel_diff_percents(resistance)
+        rel_diffs = calculations.calculate_rel_diff_percents(resistances)
         
         
         # Building report table (CSV 1)
         
         # -- build table for the current cycle
-        active_table = report_generation.populate_active_table(test_voltages, measured_voltages, measured_currents, resistance, rsd_pct, retest_threshold, cycles_completed)
+        active_table = report_generation.populate_active_table(test_voltages, measured_voltages, measured_currents, resistances, rsd_pct, RETEST_THRESHOLD, cycles_completed + 1)
         
         # -- append the current-cycle table to the full-test (accumulative) table
         full_table = report_generation.append_active_to_full_table(active_table, full_table)
@@ -268,10 +278,10 @@ def run_test(name: str, s_id: str, file_type: str, current_date: str, start_time
             print(*row, sep='\t\t')
                 
         # Checking data collection completion
-        test_complete = report_generation.check_test_complete(cycles_completed, retest_limit, full_table)
+        test_complete = report_generation.check_test_complete(cycles_completed, RETEST_LIMIT, full_table)
         
         # Incrementing cycles completed counter
-        cycles_completed = cycles_completed + 1
+        cycles_completed += 1
         
         # [end of loop]
         
