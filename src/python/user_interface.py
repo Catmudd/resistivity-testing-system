@@ -39,19 +39,63 @@ results_file_type = tk.StringVar(value='csv')   # default to CSV
 #----------------------------------------
 # set_results_file_type(type)
 #
-# parameter:
-#	- type: a string representing the file type
+# parameters:
+#	- file_type: a string representing the file type
 #
 # function description:
 #	takes in a 'type' argument and sets the program result file type
-#	to 'type'. Options are PDF, CSV, or both. This function is called
-#	when a file type button on the user interface is pressed. 
+#	to 'type'. This function is called when a file type button on the 
+#   user interface is pressed.
 #----------------------------------------
-def set_results_file_type(type):
-    results_file_type.set(type)
+def set_results_file_type(file_type: str):
+    results_file_type.set(file_type)
     print('Results file type set to ', results_file_type.get())
 
+#----------------------------------------
+# update_button_visuals()
+# 
+# Updates the visuals of the given buttons to reflect which button is
+# currently selected.
+#
+# buttons:          Dictionary of buttons to update.
+# selected:         Key of button in buttons which is selected.
+#----------------------------------------
+def update_button_visuals(file_buttons : dict, key: str):
+    for k, v in file_buttons.items():
+        if k == key:
+            v.config(bg="#89B2FF")
+        else:
+            v.config(bg="#ebebeb")
 
+#----------------------------------------
+# on_file_button_pressed()
+# 
+# Called when button file_button is pressed. Sets the results file type.
+#
+# file_buttons:     Dictionary of buttons to update, which contains 
+#                   file_button.
+# file_type:        Button that was pressed, also type of file to submit.
+#----------------------------------------
+def on_file_button_pressed(file_buttons: dict, file_button_key: str):
+    set_results_file_type(file_button_key)
+    update_button_visuals(file_buttons, file_button_key)
+
+#----------------------------------------
+# create_button_lambda()
+# 
+# Safely creates a lambda for the given list of buttons and button key.
+# This is needed, because lambdas cannot be created in the button for-
+# loop correctly; Variables in py are not truly locally scoped, and
+# the lambda will always use the variables in the lambda as they are
+# at the end of the loop. THIS IS SCARY!!! But, there's not much we can do 
+# about it other than avoiding it.
+#
+# file_buttons:     Dictionary of buttons to update, which contains 
+#                   file_button_key.
+# file_button_key:  Button that was pressed.
+#----------------------------------------
+def create_button_lambda(file_buttons: dict, file_button_key: str):
+    return lambda : on_file_button_pressed(file_buttons, file_button_key)
 
 #----------------------------------------
 # start_button_pressed()
@@ -116,7 +160,37 @@ def setup_window():
     # Terminal logging
     print('Completed: Setting up interface window\n')
 
+#----------------------------------------
+# setup_file_buttons()
+# 
+# Creates all the file type selection buttons.
+#----------------------------------------
+def setup_file_buttons():
+    # Create file buttons. These are created from a list of keys and labels for each.
+    # Each file button will set the type of file to its own key, so file_button_keys
+    # should match the kinds of files available. However, this should eventually be
+    # separated.
+    file_button_keys = ['csv', 'pdf', 'both']
+    file_button_lables = ['CSV', 'PDF', 'CSV & PDF']
+    file_buttons = dict()
 
+    # Keep track of previous width of each button, so they space nicely
+    FILE_BUTTON_SPACING = 30
+    file_button_next_start = FILE_BUTTON_SPACING
+    
+    for i in range(0, file_button_keys.__len__()):
+
+        file_button = tk.Button(
+            main_window, 
+            text=file_button_lables[i], 
+            font=('Helvetica', 30))
+
+        file_button.place(x=(file_button_next_start), y=360)
+        file_button.config(command=create_button_lambda(file_buttons, file_button_keys[i]))
+        file_buttons[file_button_keys[i]] = file_button
+        file_button_next_start += file_button.winfo_reqwidth() + FILE_BUTTON_SPACING
+
+    update_button_visuals(file_buttons, results_file_type.get())
 
 #----------------------------------------
 # display_start_menu()
@@ -150,14 +224,9 @@ def display_start_menu():
     # Result file type selection
     prompt_label = tk.Label(main_window, text='Select results file type: ', font=('Helvetica', 30))
     prompt_label.place(x=30, y=300)
-    
-    csv_button = tk.Button(main_window, text='CSV', font=('Helvetica', 30), command=lambda: set_results_file_type('csv'))
-    pdf_button = tk.Button(main_window, text='PDF', font=('Helvetica', 30), command=lambda: set_results_file_type('pdf'))
-    both_button = tk.Button(main_window, text='CSV & PDF', font=('Helvetica', 30), command=lambda: set_results_file_type('both'))
-    
-    csv_button.place(x=100, y=360)
-    pdf_button.place(x=250, y=360)
-    both_button.place(x=400, y=360)
+
+    # Setup file selection buttons
+    setup_file_buttons()
     
     # Date & time display 
     date_display = tk.Label(main_window, text=current_date, font=('Helvetica', 30))
