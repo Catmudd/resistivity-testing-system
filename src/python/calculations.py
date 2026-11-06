@@ -16,6 +16,15 @@ def calculate_resistance(test_voltages: list[int], measured_voltages: dict[int:l
     resistance = dict()
     # Looping to perform the calculation for each set of measurements
     for test_voltage in test_voltages:
+
+        # Shouldn't even crash, but checking for potential fatal errors and reporting if needed.
+        if (test_voltage not in measured_voltages) or (test_voltage not in measured_currents):
+            print(f"ERROR: Missing voltage/current measurements for {test_voltage}V. Skipping...")
+            continue
+        if (len(measured_voltages[test_voltage]) == 0) or (len(measured_currents[test_voltage]) == 0):
+            print(f"ERROR: Missing voltage/current measurements for {test_voltage}V. Skipping...")
+            continue
+
         resistance[test_voltage] = []
 
         for volts, mA in zip(measured_voltages[test_voltage], measured_currents[test_voltage]):        
@@ -45,21 +54,33 @@ def calculate_resistance(test_voltages: list[int], measured_voltages: dict[int:l
 #	- Calculates 9 resistivity values (one for each set of voltages/currents)
 #----------------------------------------
 
-def calculate_resistivity(resistance: list[float], geometry_factor: float) -> list[float]:
-    resistivity = []
+def calculate_resistivity(test_voltages: list[int], resistance: dict[int:list[float]], geometry_factor: float) -> dict[int:list[float]]:
+    resistivity = dict()
     # Looping to perform the calculation for each set of measurements
-    for r in resistance:
-        # Calculating resistivity of the dataset
-        rho = round(r * geometry_factor, 3)
-        
-        # Appending the resistivity result to the array
-        resistivity.append(rho)
+    for test_voltage in test_voltages:
+
+        # Shouldn't even crash, but checking for potential fatal errors and reporting if needed.
+        if test_voltage not in resistance:
+            print(f"ERROR: Missing resistance measurements for {test_voltage}V. Skipping...")
+            continue
+        if len(resistance[test_voltage]) == 0:
+            print(f"ERROR: Missing resistance measurements for {test_voltage}V. Skipping...")
+            continue
+
+        resistivity[test_voltage] = []
+
+        for r in resistance[test_voltage]:
+            # Calculating resistivity of the dataset
+            rho = round(r * geometry_factor, 3)
+            
+            # Appending the resistivity result to the array
+            resistivity[test_voltage].append(rho)
         
     # Terminal logging
     print('Calculated resistivity values')
 
     # Returning list.
-    return(resistance)
+    return(resistivity)
 
 
 

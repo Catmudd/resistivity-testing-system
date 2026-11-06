@@ -43,7 +43,7 @@ fail_id = []
 
 
 # Test cell geometry factor
-cell_geometry_factor = 0.33 # accounts for cross-section area and cell length
+CELL_GEOMETRY_FACTOR = 0.33 # accounts for cross-section area and cell length
 
 # Input parameters
 tester_name = ''
@@ -260,7 +260,7 @@ def run_test(name, s_id, file_type, current_date, start_time):
         
         # Performing calculations
         resistance = calculations.calculate_resistance(test_voltages, measured_voltages, measured_currents)
-        resistivity = calculations.calculate_resistivity(resistance, cell_geometry_factor)
+        resistivity = calculations.calculate_resistivity(test_voltages, resistance, CELL_GEOMETRY_FACTOR)
         avg_res = calculations.calculate_average_resistance(resistance, avg_res)
         std_dev = calculations.calculate_standard_deviation(resistance, avg_res, std_dev)
         rsd_pct = calculations.calculate_percent_RSD(avg_res, std_dev, rsd_pct)
