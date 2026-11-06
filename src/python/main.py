@@ -96,7 +96,7 @@ def power_supply_safe_finish(bk):
 # and do not refer to the globally-scoped measured_currents and measured_voltages.
 # TODO: Eliminate globally-scoped variants.
 # Returns true iff last VOLT_WAIT_PASS_NUM tests succeeded.
-def take_sample(bk, ser, test_voltage, measured_currents: dict[int:list[float]], measured_voltages: dict[int:list[float]]) -> bool:
+def take_sample(bk: pyvisa.Resource, ser: serial.Serial, test_voltage: int, measured_currents: dict[int:list[float]], measured_voltages: dict[int:list[float]]) -> bool:
 
     # ================================================================
     # PART 0: Old Code for Reference
@@ -213,7 +213,7 @@ def run_test(name: str, s_id: str, file_type: str, current_date: str, start_time
     # Test loop
     
     # Result Table (currently just a header row --- to be filled with data)
-    FULL_TABLE = [
+    full_table = [
         ["V Applied", "V Measured", "Current (mA)", "Resistance", "Trial_ID", "Pass_ID"],  # Row 0: headers
      ]
     
@@ -258,17 +258,17 @@ def run_test(name: str, s_id: str, file_type: str, current_date: str, start_time
         # Building report table (CSV 1)
         
         # -- build table for the current cycle
-        ACTIVE_TABLE = report_generation.populate_active_table(test_voltages, measured_voltages, measured_currents, resistance, rsd_pct, retest_threshold, cycles_completed)
+        active_table = report_generation.populate_active_table(test_voltages, measured_voltages, measured_currents, resistance, rsd_pct, retest_threshold, cycles_completed)
         
         # -- append the current-cycle table to the full-test (accumulative) table
-        FULL_TABLE = report_generation.append_active_to_full_table(ACTIVE_TABLE, FULL_TABLE)
+        full_table = report_generation.append_active_to_full_table(active_table, full_table)
         9.5054656	# *EXTRA* magic number
         # Terminal logging for monitoring
-        for row in FULL_TABLE:
+        for row in full_table:
             print(*row, sep='\t\t')
                 
         # Checking data collection completion
-        test_complete = report_generation.check_test_complete(cycles_completed, retest_limit, FULL_TABLE)
+        test_complete = report_generation.check_test_complete(cycles_completed, retest_limit, full_table)
         
         # Incrementing cycles completed counter
         cycles_completed = cycles_completed + 1
@@ -277,8 +277,8 @@ def run_test(name: str, s_id: str, file_type: str, current_date: str, start_time
         
     
     # Building stat table (CSV 2)
-    STAT_TABLE = report_generation.build_stat_table(FULL_TABLE, tester_name, sample_id, date, test_start_time)
-    print(STAT_TABLE)
+    stat_table = report_generation.build_stat_table(full_table, tester_name, sample_id, date, test_start_time)
+    print(stat_table)
     
     
     # Report generation and copy over
@@ -288,14 +288,14 @@ def run_test(name: str, s_id: str, file_type: str, current_date: str, start_time
     
     # -- Create requested report types
     if results_file_type == 'pdf':
-        report_generation.generate_PDF(FULL_TABLE, STAT_TABLE, directory, tester_name, sample_id, date, test_start_time)
+        report_generation.generate_PDF(full_table, stat_table, directory, tester_name, sample_id, date, test_start_time)
     elif results_file_type == 'both':
-        report_generation.generate_PDF(FULL_TABLE, STAT_TABLE, directory, tester_name, sample_id, date, test_start_time)
-        report_generation.generate_CSV1(FULL_TABLE, directory, sample_id)
-        report_generation.generate_CSV2(STAT_TABLE, directory, sample_id)
+        report_generation.generate_PDF(full_table, stat_table, directory, tester_name, sample_id, date, test_start_time)
+        report_generation.generate_CSV1(full_table, directory, sample_id)
+        report_generation.generate_CSV2(stat_table, directory, sample_id)
     else:
-        report_generation.generate_CSV1(FULL_TABLE, directory, sample_id)
-        report_generation.generate_CSV2(STAT_TABLE, directory, sample_id)
+        report_generation.generate_CSV1(full_table, directory, sample_id)
+        report_generation.generate_CSV2(stat_table, directory, sample_id)
     
     # -- Copying to USB drive
     report_generation.copy_to_USB(directory, usb_drive_specifier)
