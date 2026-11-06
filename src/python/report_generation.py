@@ -226,27 +226,32 @@ def generate_CSV2(table, directory, sample_id):
 # 		["V Applied", "V Measured", "Current", "Resistance", "Trial_ID", "Pass_ID"]
 #----------------------------------------
     
-def populate_active_table(test_voltages, measured_voltages, measured_currents, resistance, rsd_pct, retest_threshold, cycles_completed):
+def populate_active_table(test_voltages: list[int], measured_voltages: dict[int:list[float]], measured_currents: dict[int:list[float]], resistances: dict[int:list[float]], rsd_pct: float, retest_threshold: int, cycles_completed: int):
+
+    if (not measured_voltages) or (not measured_currents) or (not resistances):
+        print("populate_active_table: ERROR: Missing voltage/current/resistance data. Aborting table population with empty table...")
+        return list()
+    
     # Empty array to be filled with the active table
-    ACTIVE_TABLE = []
+    active_table = []
     
     # Building each row of the table and appending it to the table
-    for i in range(len(test_voltages)):
+    for test_voltage in test_voltages:
         # Building the 'i' row of the active table
         row = []
-        row.append(test_voltages[i])
-        row.append(measured_voltages[i])
-        row.append(measured_currents[i])
-        row.append(resistance[i])
+        row.append(test_voltage)
+        row.append(measured_voltages[test_voltage])
+        row.append(measured_currents[test_voltage])
+        row.append(resistances[test_voltage])
         row.append(cycles_completed)
         row.append('pass' if rsd_pct <= retest_threshold else 'fail')
         
-        # Appending the 'i' row to 'ACTIVE_TABLE'
-        ACTIVE_TABLE.append(row)
+        # Appending the 'i' row to 'active_table'
+        active_table.append(row)
     
     print('Populated active table')
     
-    return ACTIVE_TABLE
+    return active_table
     
     
 
@@ -263,10 +268,10 @@ def populate_active_table(test_voltages, measured_voltages, measured_currents, r
 # function description:
 #	Appends the current-cycle data table to the cumulative table and returns the combined table 
 #----------------------------------------
-def append_active_to_full_table(ACTIVE_TABLE, FULL_TABLE):
-    FULL_TABLE = FULL_TABLE + ACTIVE_TABLE
+def append_active_to_full_table(active_table, full_table):
+    full_table = full_table + active_table
     print('Appended active to full table')
-    return FULL_TABLE
+    return full_table
 
     
 

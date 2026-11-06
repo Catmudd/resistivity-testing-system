@@ -155,7 +155,7 @@ def channel_off(power_supply):
 #	in the array correspond to the test voltage in the matching index. 
 #----------------------------------------
 
-def measure_current(power_supply, measured_currents):
+def measure_current(power_supply, test_voltage: int, measured_currents: dict[int:list[float]]) -> None:
     # Querying the power supply for a current value
     current = power_supply.query('MEAS:CURR?')
     print('debug display: ', current)
@@ -164,7 +164,9 @@ def measure_current(power_supply, measured_currents):
     current = float(current)*1000
     
     # Appending result to the 'measured_currents' array
-    measured_currents.append(current)
+    if test_voltage not in measured_currents:
+        measured_currents[test_voltage] = []
+    measured_currents[test_voltage].append(current)
     
     # Terminal logging
     print('Measured current ', current, ' mA')
