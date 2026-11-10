@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # activating the virtual environment
 source "/home/wsucapstone/capstone/venv/bin/activate"
 

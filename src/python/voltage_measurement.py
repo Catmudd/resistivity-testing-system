@@ -30,7 +30,7 @@ def trigger_arduino(ser):
     ser.write(instruction)
     
     # Time delay
-    time.sleep(5)
+    time.sleep(1) # WAS five seconds
 
 
 

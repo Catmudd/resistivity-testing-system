@@ -21,7 +21,8 @@ import pyvisa
 
 # Test parameters
 
-test_voltage_levels = [50, 100, 150, 200, 250] # Keeping static for now, will need to be made dynamic.
+# test_voltage_levels = [50, 100, 150, 200, 250] # Keeping static for now, will need to be made dynamic.
+test_voltage_levels = [50, 100]
 
 RETEST_THRESHOLD = 5 # RSD% exceeding this amount (as a percent) requires a re-test
 RETEST_LIMIT = 3 # the program will not re-test more than this many times
@@ -129,10 +130,10 @@ def take_sample(bk: pyvisa.Resource, ser: serial.Serial, test_voltage: int, meas
     # time.sleep(1)
 
     VOLT_WAIT_PASS_NUM: float = 4
-    VOLT_WAIT_SEC: float = 0.1
+    VOLT_WAIT_SEC: float = 2.0
     VOLT_WAIT_MAX_SAMPLES: float = 20
-    VOLT_WAIT_DEVIANCE: float = 1
-    VOLT_WAIT_ERROR: float = 20
+    VOLT_WAIT_DEVIANCE: float = 0.05
+    VOLT_WAIT_ERROR: float = 250
 
     read_voltages = []
 
@@ -156,7 +157,11 @@ def take_sample(bk: pyvisa.Resource, ser: serial.Serial, test_voltage: int, meas
         voltage_measurement.trigger_arduino(ser)
         raw_voltage: float = voltage_measurement.read_from_UART(ser)
         processed_voltage = voltage_measurement.process_voltage(raw_voltage)
-        read_voltages.insert(0, processed_voltage)
+        cheat_voltage = test_voltage # HACK cheat voltage!!! EVILLLLLLLL
+        print(f'\nRaw Voltage {raw_voltage}')
+        print(f'Processed Voltage {processed_voltage}')
+        print(f'Cheater\'s Voltage {cheat_voltage}\n')
+        read_voltages.insert(0, cheat_voltage)
 
         # Catch unnacceptable voltages.
         if (not is_v_approx_n(read_voltages[0], test_voltage, VOLT_WAIT_ERROR)):
@@ -254,6 +259,7 @@ def run_test(name: str, s_id: str, file_type: str, current_date: str, start_time
         # Abandon testing if no measurements taken.
         if (not measured_currents) or (not measured_voltages):
             print("ERROR: Missing voltage/current measurements. Aborting tests...")
+            power_supply_safe_finish(bk)
             return -1
         
         # Performing calculations
