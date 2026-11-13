@@ -218,6 +218,7 @@ def calculate_rel_diff_percents(resistance: dict[int:list[float]]) -> dict[int:f
             print(f"calculate_rel_diff_percents: ERROR: Missing resistance data for {test_voltage}V. Skipping...")
             continue
 
+        rel_diffs[test_voltage] = []
     
     # num_trials = n // 9
     # pair_indices = [(0, 8), (1, 7), (2, 6), (3, 5)]

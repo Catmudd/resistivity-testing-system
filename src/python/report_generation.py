@@ -358,10 +358,10 @@ def build_stat_table(table, tester_name, sample_id, date, test_start_time):
 
     
     # Step 4: Reuse the calculation functions
-    avg_res = calculations.calculate_average_resistance(resistance, avg_res)
-    std_dev = calculations.calculate_standard_deviation(resistance, avg_res, std_dev)
-    rsd_pct = calculations.calculate_percent_RSD(avg_res, std_dev, rsd_pct)
-    calculations.calculate_rel_diff_percents(resistance, pair_diffs)
+    avg_res = calculations.calculate_average_resistance(resistance)
+    std_dev = calculations.calculate_standard_deviation(resistance, avg_res)
+    rsd_pct = calculations.calculate_percent_RSD(avg_res, std_dev)
+    calculations.calculate_rel_diff_percents(resistance)
 
     
     # Step 5: Calculate average resistivity (simple multiplication)
