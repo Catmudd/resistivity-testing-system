@@ -7,7 +7,8 @@ MILLIAMP_CONVERSION = 1000   # Used for Ohm's Law: R(Ohms) = 1000 * V(Volts) / I
 def calculate_resistance(test_voltages: list[int], measured_voltages: dict[int:list[float]], measured_currents: dict[int:list[float]]) -> dict[int:list[float]]:
     """
     Calculates the resistances at each test voltage level for the measured voltage and current. If the number of measurements\
-        is uneven, it is bound by whichever measurement is less populous for each test voltage level.
+        is uneven, it is bound by whichever measurement is less populous for each test voltage level.\n
+        `voltage = current / resistance`
 
     :param `test_voltages`: A list of integer voltage levels for which tests were run.
     :type `test_voltages`: **list [ int ]**
@@ -54,7 +55,8 @@ def calculate_resistance(test_voltages: list[int], measured_voltages: dict[int:l
 
 def calculate_resistivity(test_voltages: list[int], resistance: dict[int:list[float]], geometry_factor: float) -> dict[int:list[float]]:
     """
-    Calculates the resistivities at each test voltage level for the calculated resistance given a geometry factor.
+    Calculates the resistivities at each test voltage level for the calculated resistance given a geometry factor.\n
+        `resistivity = resistance * geometry_factor`
 
     :param `test_voltages`: A list of integer voltage levels for which tests were run.
     :type `test_voltages`: **list [ int ]**
@@ -100,7 +102,8 @@ def calculate_resistivity(test_voltages: list[int], resistance: dict[int:list[fl
 
 def summarize_resistivity(resistance: dict[int:list[float]], geometry_factor: float) -> float:
     """
-    Calculates and returns a summarized resistivity value, equal to the mean calculated resistance multiplied by the geometry factor.
+    Calculates and returns a summarized resistivity value, equal to the mean calculated resistance multiplied by the geometry factor.\n
+        `geometry_factor * sum(resistances) / #resistance_measures`
 
     :param `resistance`: A dictionary with keys matching the integer test voltage levels and with each value being a\
         list of calculated resistances ordered chronologically by the time the measurements were taken.
@@ -133,7 +136,8 @@ def summarize_resistivity(resistance: dict[int:list[float]], geometry_factor: fl
 
 def calculate_average_resistance(resistance: dict[int:list[float]]) -> float:
     """
-    Calculates and returns the mean resistance from the calculated resistance values.
+    Calculates and returns the mean resistance from the calculated resistance values.\n
+        `sum(resistances) / #resistance_measures`
 
     :param `resistance`: A dictionary with keys matching the integer test voltage levels and with each value being a\
         list of calculated resistances ordered chronologically by the time the measurements were taken.
@@ -158,7 +162,8 @@ def calculate_average_resistance(resistance: dict[int:list[float]]) -> float:
 
 def calculate_standard_deviation(resistance: dict[int:list[float]], avg_res: float) -> float:
     """
-    Calculates and returns the standard deviation of the measured resistance values.
+    Calculates and returns the standard deviation of the measured resistance values.\n
+        `standard_deviation = sqrt( sum((resistance - average)^2 / #resistance_measures)) [for all resistance measures]`
 
     :param `resistance`: A dictionary with keys matching the integer test voltage levels and with each value being a\
         list of calculated resistances ordered chronologically by the time the measurements were taken.
