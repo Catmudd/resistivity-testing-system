@@ -254,6 +254,7 @@ def run_test(name: str, s_id: str, file_type: str, current_date: str, start_time
         # Abandon testing if no measurements taken.
         if (not measured_currents) or (not measured_voltages):
             print("ERROR: Missing voltage/current measurements. Aborting tests...")
+            power_supply_safe_finish(bk)
             return -1
         
         # Performing calculations
