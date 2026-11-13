@@ -8,7 +8,7 @@ def calculate_resistance(test_voltages: list[int], measured_voltages: dict[int:l
     """
     Calculates the resistances at each test voltage level for the measured voltage and current. If the number of measurements\
         is uneven, it is bound by whichever measurement is less populous for each test voltage level.\n
-        `voltage = current / resistance`
+        `resistance = voltage / current`
 
     :param `test_voltages`: A list of integer voltage levels for which tests were run.
     :type `test_voltages`: **list [ int ]**
@@ -163,7 +163,7 @@ def calculate_average_resistance(resistance: dict[int:list[float]]) -> float:
 def calculate_standard_deviation(resistance: dict[int:list[float]], avg_res: float) -> float:
     """
     Calculates and returns the standard deviation of the measured resistance values.\n
-        `standard_deviation = sqrt( sum((resistance - average)^2 / #resistance_measures)) [for all resistance measures]`
+        `standard_deviation = sqrt( sum((resistance - average)^2 / (#resistance_measures - 1))) [for all resistance measures]`
 
     :param `resistance`: A dictionary with keys matching the integer test voltage levels and with each value being a\
         list of calculated resistances ordered chronologically by the time the measurements were taken.
