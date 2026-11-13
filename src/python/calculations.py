@@ -190,19 +190,20 @@ def calculate_standard_deviation(resistance: dict[int:list[float]], avg_res: flo
 
 
 
-#----------------------------------------
-# calculate_percent_RSD(avg_res, std_dev, rsd_pct)
-#
-# parameters:
-#	- avg_res: the calculated average of the resistances. 
-#	- std_dev: the calculated standard deviation value.
-#	- rsd_pct: value to hold the calculated % RSD value. 
-#
-# function description:
-#	Matches the BPA Excel % RSD calculation.
-#	% RSD = (standard_deviation / mean) * 100
-#----------------------------------------
+
 def calculate_percent_RSD(avg_res: float, std_dev: float) -> float:
+    """
+    Calculates and returns the percent RSD as defined in the BPA Switchyard Rock Worksheet.\n
+        `% RSD = (standard_deviation / mean) * 100`
+
+    :param `avg_res`: The mean of the calculated resistance values.
+    :type `avg_res`: **float**
+    :param `std_dev`: The standard deviation of the measured resistance values.
+    :type `std_dev`: **float**
+    :rtype: `rsd_pct` \: *float*
+    :return: The percent RSD for the calculated resistance values.
+    """
+
     rsd_pct = (100.0 * std_dev / avg_res) if avg_res != 0.0 else 0.0
     return rsd_pct
     
