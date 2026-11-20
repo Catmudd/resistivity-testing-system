@@ -130,9 +130,13 @@ def main(simulator: bool):
     devices.ps.configure_ethernet()
     devices.ps.startup()
 
-    log: dict[int, list[voltage_data]] = dict()
-    print(f'All Tests passed: {test(devices, log)}')
-    log_dump(log)
+    try:
+        log: dict[int, list[voltage_data]] = dict()
+        print(f'All Tests passed: {test(devices, log)}')
+        log_dump(log)
+    except:
+        devices.reset()
+        raise
 
 if __name__ == '__main__':
     main(True)
