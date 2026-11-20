@@ -122,9 +122,9 @@ def test(devices: module_devices, log: dict[int, list[voltage_data]]) -> bool:
 
     return passed
 
-if __name__ == '__main__':
+def main(simulator: bool):
 
-    devices = module_devices(True)
+    devices = module_devices(simulator)
 
     devices.ps.can_ping()
     devices.ps.configure_ethernet()
@@ -133,3 +133,6 @@ if __name__ == '__main__':
     log: dict[int, list[voltage_data]] = dict()
     print(f'All Tests passed: {test(devices, log)}')
     log_dump(log)
+
+if __name__ == '__main__':
+    main(True)
