@@ -162,12 +162,7 @@ class module_ps:
 
         # No need to do a real measurement if simulator!
         if (self.simulator == True):
-            
-            
-            
-            
-            return
-        
+            return self.target_voltage / 10.0
         
         current = self.resource.query('MEAS:CURR?') * 1000
         print('Measured current ', current, ' mA')
