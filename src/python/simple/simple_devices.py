@@ -28,7 +28,7 @@ class module_devices:
         pass
 
 # ================================================================
-# ANALOG TO DIGITAL CONVERTER
+# POWER SUPPLY
 # ================================================================
 
 PS_MANAGER = '@py'

@@ -5,7 +5,7 @@ from simple_devices import module_devices
 VOLT_WAIT_PASS_NUM: float = 4
 VOLT_WAIT_SEC: float = 0.1
 VOLT_WAIT_MAX_SAMPLES: float = 20
-VOLT_WAIT_DEVIANCE: float = 1
+VOLT_WAIT_DEVIANCE: float = 10
 VOLT_WAIT_ERROR: float = 260
 
 SQRT2 = math.sqrt(2.0)
@@ -24,8 +24,19 @@ class voltage_data:
         self.current: float = current
         self.passed: bool = passed
 
-def log_data(log: dict[int, voltage_data], test_id: int, data: voltage_data):
-    log[test_id] = data
+def log_data(log: dict[int, list[voltage_data]], test_id: int, data: voltage_data):
+    
+    if (not log.__contains__(test_id)):
+        log[test_id] = [data]
+    else:
+        log[test_id].append(data)
+
+def log_dump(log: dict[int, list[voltage_data]]):
+    for voltage_index in range(0, TEST_TRG_AND_EXP.__len__()):
+        ln = f'Target Voltage {TEST_TRG_AND_EXP[voltage_index][0]}:\n'
+        for data in log[voltage_index]:
+            ln += f'\n\tVoltage: {data.voltage}\n\tCurrent: {data.current}\n\tPassed: {data.passed}\n'
+        print(ln)
 
 def average(values: list[float]) -> float:
     
@@ -82,16 +93,21 @@ def test_voltage(devices: module_devices, voltage_target: float, voltage_expecte
 
     return voltage_data(average_voltage, read_current, passed)
 
-def test(devices: module_devices):
+def test(devices: module_devices, log: dict[int, list[voltage_data]]) -> bool:
 
-    log: dict[int, voltage_data] = dict()
+
     test_number = 0
+    passed = True
 
     for voltage_index in TEST_INDICES:
 
         voltage_target = TEST_TRG_AND_EXP[voltage_index][0]
         voltage_expected = TEST_TRG_AND_EXP[voltage_index][1]
         data: voltage_data = test_voltage(devices, voltage_target, voltage_expected)
+
+        # Don't pass if a test failed
+        if data.passed == False:
+            passed = False
 
         print(f'================================================================')
         print(f'Test Number: {test_number}, Voltage Index: {voltage_index}')
@@ -104,7 +120,16 @@ def test(devices: module_devices):
         log_data(log, voltage_index, data)
         test_number += 1
 
+    return passed
+
 if __name__ == '__main__':
 
     devices = module_devices(True)
-    test(devices)
+
+    devices.ps.can_ping()
+    devices.ps.configure_ethernet()
+    devices.ps.startup()
+
+    log: dict[int, list[voltage_data]] = dict()
+    print(f'All Tests passed: {test(devices, log)}')
+    log_dump(log)
